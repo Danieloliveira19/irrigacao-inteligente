@@ -1,17 +1,13 @@
 from pydantic import BaseModel
 
 
-class IrrigationRuleResponse(BaseModel):
+class PlantStageTemplateResponse(BaseModel):
     id: int
-    user_plant_id: int
+    plant_catalog_id: int
+    stage: str
     threshold_percent: float
     duration_minutes: int
     min_interval_minutes: int
-    enabled: bool
 
     class Config:
         from_attributes = True
-
-
-class EvaluateRequest(BaseModel):
-    current_moisture_percent: float

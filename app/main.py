@@ -3,30 +3,20 @@ from fastapi import FastAPI
 from app.database.base import Base
 from app.database.database import engine
 
-# Models (OBRIGATÓRIO importar todos)
-from app.models.plant import Plant
-from app.models.irrigation_rule import IrrigationRule
+from app.models.user import User  # noqa: F401
+from app.models.plant_catalog import PlantCatalog  # noqa: F401
+from app.models.plant_stage_template import PlantStageTemplate  # noqa: F401
+from app.models.user_plant import UserPlant  # noqa: F401
+from app.models.irrigation_rule import IrrigationRule  # noqa: F401
 
-# Routers
-from app.routes.plants import router as plants_router
-from app.routes.irrigation_rules import router as irrigation_rules_router
+from app.routes.users import router as users_router
+from app.routes.plant_catalog import router as plant_catalog_router
+from app.routes.user_plants import router as user_plants_router
 
+Base.metadata.create_all(bind=engine)
 
-app = FastAPI(
-    title="Sistema de Irrigação Inteligente",
-    version="0.1.0",
-)
+app = FastAPI(title="Sistema de Irrigação Inteligente")
 
-
-@app.on_event("startup")
-def startup():
-    Base.metadata.create_all(bind=engine)
-
-
-app.include_router(plants_router)
-app.include_router(irrigation_rules_router)
-
-
-@app.get("/")
-def root():
-    return {"status": "Backend rodando com sucesso 🚀"}
+app.include_router(users_router)
+app.include_router(plant_catalog_router)
+app.include_router(user_plants_router)

@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, Float, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+
 from app.database.base import Base
 
 
@@ -7,15 +9,13 @@ class IrrigationRule(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    plant_id = Column(
-        Integer,
-        ForeignKey("plants.id"),
-        nullable=False,
-        index=True
-    )
+    user_plant_id = Column(Integer, ForeignKey("user_plants.id"), nullable=False)
 
-    frequency_days = Column(Integer, nullable=False)
-    water_ml = Column(Integer, nullable=False)
-    period = Column(String, nullable=False)
+    threshold_percent = Column(Float, nullable=False, default=30.0)
+    duration_minutes = Column(Integer, nullable=False, default=30)
+    min_interval_minutes = Column(Integer, nullable=False, default=60)
 
-    notes = Column(String, nullable=True)
+    enabled = Column(Boolean, default=True)
+
+    user_plant = relationship("UserPlant", back_populates="rule")
+

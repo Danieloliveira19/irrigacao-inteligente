@@ -1,17 +1,14 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.sql import func
 
 from app.database.base import Base
 
 
-class Plant(Base):
-    __tablename__ = "plants"
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    # planta do catálogo ou personalizada
     name = Column(String, nullable=False)
-    is_catalog = Column(Boolean, default=True)
-
+    email = Column(String, unique=True, index=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
