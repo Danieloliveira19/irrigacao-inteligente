@@ -14,7 +14,16 @@ class UserPlant(Base):
 
     custom_name = Column(String, nullable=True)
 
-    # fase atual da cultura
+    # GERMINATION | DEVELOPMENT | FLOWERING | FRUITING | HARVEST
     stage = Column(String, nullable=False, default="DEVELOPMENT")
 
-    rule = relationship("IrrigationRule", back_populates="user_plant", uselist=False)
+    # relacionamentos
+    user = relationship("User", back_populates="plants")
+    catalog = relationship("PlantCatalog")
+
+    # ✅ isso resolve exatamente o erro: "UserPlant has no property 'rules'"
+    rules = relationship(
+        "IrrigationRule",
+        back_populates="user_plant",
+        cascade="all, delete-orphan",
+    )

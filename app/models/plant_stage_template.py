@@ -6,9 +6,10 @@ class PlantStageTemplate(Base):
     __tablename__ = "plant_stage_templates"
 
     id = Column(Integer, primary_key=True, index=True)
+
     plant_catalog_id = Column(Integer, ForeignKey("plant_catalog.id"), nullable=False)
 
-    # INITIAL | DEVELOPMENT | MID | LATE
+    # GERMINATION | DEVELOPMENT | FLOWERING | FRUITING | HARVEST
     stage = Column(String, nullable=False)
 
     threshold_percent = Column(Float, nullable=False)
