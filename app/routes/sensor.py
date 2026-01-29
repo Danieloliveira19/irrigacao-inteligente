@@ -1,41 +1,55 @@
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.deps import get_db
 from app.models.user_plant import UserPlant
-from app.models.plant_catalog import PlantCatalog
-from app.models.plant_stage_template import PlantStageTemplate
 from app.models.irrigation_rule import IrrigationRule
+from app.models.plant_stage_template import PlantStageTemplate
+from app.models.plant_catalog import PlantCatalog
 from app.models.irrigation_event import IrrigationEvent
+
 from app.schemas.sensor import SensorReadingRequest, SensorReadingResponse
 
 router = APIRouter(prefix="/users/{user_id}/plants/{user_plant_id}", tags=["Sensor"])
 
 
-def _get_custom_rule(db: Session, user_plant_id: int, stage: str):
-    return (
+def _pick_rule(db: Session, plant: UserPlant):
+    stage = plant.stage
+
+    # 1) custom (IrrigationRule)
+    custom = (
         db.query(IrrigationRule)
         .filter(
-            IrrigationRule.user_plant_id == user_plant_id,
+            IrrigationRule.user_plant_id == plant.id,
             IrrigationRule.stage == stage,
-            IrrigationRule.is_custom == True,  # noqa: E712
+            IrrigationRule.enabled.is_(True),
         )
-        .order_by(IrrigationRule.id.desc())
+        .order_by(IrrigationRule.created_at.desc())
         .first()
     )
+    if custom:
+        return ("custom", custom.threshold_percent, custom.duration_minutes, custom.min_interval_minutes)
 
-
-def _get_stage_template(db: Session, plant_catalog_id: int, stage: str):
-    return (
-        db.query(PlantStageTemplate)
-        .filter(
-            PlantStageTemplate.plant_catalog_id == plant_catalog_id,
-            PlantStageTemplate.stage == stage,
+    # 2) template (PlantStageTemplate) - precisa ter catalog
+    if plant.plant_catalog_id:
+        tpl = (
+            db.query(PlantStageTemplate)
+            .filter(
+                PlantStageTemplate.plant_catalog_id == plant.plant_catalog_id,
+                PlantStageTemplate.stage == stage,
+            )
+            .first()
         )
-        .first()
-    )
+        if tpl:
+            return ("template", tpl.threshold_percent, tpl.duration_minutes, tpl.min_interval_minutes)
+
+        # 3) default do catálogo
+        catalog = db.query(PlantCatalog).filter(PlantCatalog.id == plant.plant_catalog_id).first()
+        if catalog:
+            return ("catalog_default", catalog.default_threshold_percent, catalog.default_duration_minutes, catalog.default_min_interval_minutes)
+
+    # se for planta custom sem catálogo, fallback final fixo
+    return ("catalog_default", 30.0, 20, 60)
 
 
 @router.post("/sensor-reading", response_model=SensorReadingResponse)
@@ -45,73 +59,28 @@ def sensor_reading(
     payload: SensorReadingRequest,
     db: Session = Depends(get_db),
 ):
-    plant = (
-        db.query(UserPlant)
-        .filter(UserPlant.id == user_plant_id, UserPlant.user_id == user_id)
-        .first()
-    )
+    plant = db.query(UserPlant).filter(UserPlant.id == user_plant_id, UserPlant.user_id == user_id).first()
     if not plant:
-        raise HTTPException(status_code=404, detail="Planta do usuário não encontrada")
+        raise HTTPException(status_code=404, detail="UserPlant não encontrado")
 
-    stage = plant.stage
-
-    # 1) Regra custom
-    custom = _get_custom_rule(db, user_plant_id=user_plant_id, stage=stage)
-    if custom:
-        threshold = float(custom.threshold_percent)
-        duration = int(custom.duration_minutes)
-        min_interval = int(custom.min_interval_minutes)
-        rule_source = "CUSTOM_RULE"
-        note = "Regra personalizada aplicada (custom)."
-    else:
-        # precisa ter catálogo para template/default
-        if not plant.plant_catalog_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Planta custom sem catálogo: crie uma regra custom para esta fase.",
-            )
-
-        # 2) Template por fase do catálogo
-        template = _get_stage_template(
-            db, plant_catalog_id=plant.plant_catalog_id, stage=stage
-        )
-        if template:
-            threshold = float(template.threshold_percent)
-            duration = int(template.duration_minutes)
-            min_interval = int(template.min_interval_minutes)
-            rule_source = "STAGE_TEMPLATE"
-            note = "Template do catálogo aplicado (por fase)."
-        else:
-            # 3) Default do catálogo
-            catalog = (
-                db.query(PlantCatalog)
-                .filter(PlantCatalog.id == plant.plant_catalog_id)
-                .first()
-            )
-            if not catalog:
-                raise HTTPException(status_code=400, detail="Catálogo não encontrado")
-
-            threshold = float(catalog.default_threshold_percent)
-            duration = int(catalog.default_duration_minutes)
-            min_interval = int(catalog.default_min_interval_minutes)
-            rule_source = "CATALOG_DEFAULT"
-            note = "Fallback: default do catálogo (não há template para esta fase)."
+    rule_source, threshold, duration, min_interval = _pick_rule(db, plant)
 
     moisture = float(payload.current_moisture_percent)
-    should_irrigate = moisture < threshold
-    duration_to_apply = duration if should_irrigate else 0
+    should_irrigate = moisture < float(threshold)
+    duration_to_apply = int(duration) if should_irrigate else 0
 
-    # (por enquanto só registramos o evento; lógica de min_interval você pode colocar no C)
+    note = "Umidade informada manualmente."
+
     event = IrrigationEvent(
         user_id=user_id,
-        user_plant_id=user_plant_id,
-        stage=stage,
+        user_plant_id=plant.id,
+        stage=plant.stage,
         moisture_percent=moisture,
-        threshold_percent=threshold,
-        should_irrigate=should_irrigate,
+        threshold_percent=float(threshold),
+        should_irrigate=bool(should_irrigate),
         duration_minutes=duration_to_apply,
         rule_source=rule_source,
-        created_at=datetime.now(timezone.utc).isoformat(),
+        note=note,
     )
     db.add(event)
     db.commit()
@@ -119,10 +88,10 @@ def sensor_reading(
     return SensorReadingResponse(
         user_id=user_id,
         user_plant_id=user_plant_id,
-        stage=stage,
+        stage=plant.stage,
         moisture_percent=moisture,
-        threshold_percent=threshold,
-        should_irrigate=should_irrigate,
+        threshold_percent=float(threshold),
+        should_irrigate=bool(should_irrigate),
         duration_minutes=duration_to_apply,
         rule_source=rule_source,
         note=note,

@@ -8,22 +8,27 @@ class UserPlant(Base):
     __tablename__ = "user_plants"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    plant_catalog_id = Column(Integer, ForeignKey("plant_catalog.id"), nullable=True)
+    # se veio do catálogo, preenche; se for custom, pode ser null
+    plant_catalog_id = Column(Integer, ForeignKey("plant_catalog.id"), nullable=True, index=True)
 
     custom_name = Column(String, nullable=True)
 
-    # GERMINATION | DEVELOPMENT | FLOWERING | FRUITING | HARVEST
+    # fase atual da planta
     stage = Column(String, nullable=False, default="DEVELOPMENT")
 
-    # relacionamentos
     user = relationship("User", back_populates="plants")
-    catalog = relationship("PlantCatalog")
+    plant_catalog = relationship("PlantCatalog", back_populates="user_plants")
 
-    # ✅ isso resolve exatamente o erro: "UserPlant has no property 'rules'"
-    rules = relationship(
+    irrigation_rules = relationship(
         "IrrigationRule",
+        back_populates="user_plant",
+        cascade="all, delete-orphan",
+    )
+
+    events = relationship(
+        "IrrigationEvent",
         back_populates="user_plant",
         cascade="all, delete-orphan",
     )

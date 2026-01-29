@@ -1,4 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, DateTime
+from sqlalchemy.orm import relationship
+from datetime import datetime, timezone
+
 from app.database.base import Base
 
 
@@ -6,9 +9,8 @@ class IrrigationEvent(Base):
     __tablename__ = "irrigation_events"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    user_id = Column(Integer, nullable=False)
-    user_plant_id = Column(Integer, ForeignKey("user_plants.id"), nullable=False)
+    user_id = Column(Integer, nullable=False, index=True)
+    user_plant_id = Column(Integer, ForeignKey("user_plants.id"), nullable=False, index=True)
 
     stage = Column(String, nullable=False)
 
@@ -18,9 +20,9 @@ class IrrigationEvent(Base):
     should_irrigate = Column(Boolean, nullable=False)
     duration_minutes = Column(Integer, nullable=False)
 
-    # CUSTOM_RULE | STAGE_TEMPLATE | CATALOG_DEFAULT
-    rule_source = Column(String, nullable=False)
+    rule_source = Column(String, nullable=False)  # "custom" | "template" | "catalog_default"
+    note = Column(String, nullable=True)
 
-    # ISO string (vamos manter simples se você já estava usando created_at em outro lugar,
-    # você pode trocar por DateTime depois)
-    created_at = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    user_plant = relationship("UserPlant", back_populates="events")

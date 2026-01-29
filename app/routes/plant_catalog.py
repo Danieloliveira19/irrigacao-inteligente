@@ -4,79 +4,56 @@ from sqlalchemy.orm import Session
 from app.database.deps import get_db
 from app.models.plant_catalog import PlantCatalog
 from app.models.plant_stage_template import PlantStageTemplate
+from app.schemas.plant_catalog import PlantCatalogItem, SeedResponse
 
 router = APIRouter(prefix="/plants/catalog", tags=["Plants Catalog"])
 
 
-@router.get("")
+@router.get("/", response_model=list[PlantCatalogItem])
 def list_catalog(db: Session = Depends(get_db)):
-    items = db.query(PlantCatalog).order_by(PlantCatalog.name.asc()).all()
-    return [
-        {
-            "id": p.id,
-            "name": p.name,
-            "category": p.category,
-            "scientific_name": p.scientific_name,
-            "default_threshold_percent": p.default_threshold_percent,
-            "default_duration_minutes": p.default_duration_minutes,
-            "default_min_interval_minutes": p.default_min_interval_minutes,
-            "image_url": p.image_url,
-        }
-        for p in items
-    ]
+    return db.query(PlantCatalog).order_by(PlantCatalog.name.asc()).all()
 
 
-@router.post("/seed")
+@router.post("/seed", response_model=SeedResponse)
 def seed_catalog(db: Session = Depends(get_db)):
-    try:
-        if db.query(PlantCatalog).count() > 0:
-            return {"message": "catalog já possui dados", "created_plants": 0, "created_templates": 0}
+    # se já tem dados, não duplica
+    if db.query(PlantCatalog).count() > 0:
+        return SeedResponse(message="catalog já possui dados", created_plants=0, created_templates=0)
 
-        # plantas exemplo
-        morango = PlantCatalog(
-            name="Morango",
-            category="FRUTO",
-            default_threshold_percent=30,
-            default_duration_minutes=20,
-            default_min_interval_minutes=60,
-        )
-        alface = PlantCatalog(
-            name="Alface",
-            category="VERDURA",
-            default_threshold_percent=35,
-            default_duration_minutes=15,
-            default_min_interval_minutes=60,
-        )
+    # Plantas exemplo (você pode expandir depois)
+    morango = PlantCatalog(
+        name="Morango",
+        category="FRUTO",
+        default_threshold_percent=30,
+        default_duration_minutes=20,
+        default_min_interval_minutes=60,
+    )
+    alface = PlantCatalog(
+        name="Alface",
+        category="VERDURA",
+        default_threshold_percent=35,
+        default_duration_minutes=15,
+        default_min_interval_minutes=60,
+    )
 
-        db.add_all([morango, alface])
-        db.commit()
-        db.refresh(morango)
-        db.refresh(alface)
+    db.add_all([morango, alface])
+    db.commit()
+    db.refresh(morango)
+    db.refresh(alface)
 
-        stages = ["GERMINATION", "DEVELOPMENT", "FLOWERING", "FRUITING", "HARVEST"]
+    templates = []
 
-        def make_templates(plant_id: int, base_threshold: float, base_duration: int):
-            # valores simples (você ajusta depois)
-            return [
-                PlantStageTemplate(
-                    plant_catalog_id=plant_id,
-                    stage=st,
-                    threshold_percent=base_threshold,
-                    duration_minutes=base_duration,
-                    min_interval_minutes=60,
-                )
-                for st in stages
-            ]
+    # Templates por fase (exemplo simples)
+    for plant in [morango, alface]:
+        templates.extend([
+            PlantStageTemplate(plant_catalog_id=plant.id, stage="GERMINATION", threshold_percent=40, duration_minutes=10, min_interval_minutes=120),
+            PlantStageTemplate(plant_catalog_id=plant.id, stage="DEVELOPMENT", threshold_percent=35 if plant.name == "Alface" else 30, duration_minutes=15 if plant.name == "Alface" else 20, min_interval_minutes=60),
+            PlantStageTemplate(plant_catalog_id=plant.id, stage="FLOWERING", threshold_percent=28, duration_minutes=20, min_interval_minutes=90),
+            PlantStageTemplate(plant_catalog_id=plant.id, stage="FRUITING", threshold_percent=26, duration_minutes=25, min_interval_minutes=90),
+            PlantStageTemplate(plant_catalog_id=plant.id, stage="HARVEST", threshold_percent=30, duration_minutes=10, min_interval_minutes=120),
+        ])
 
-        templates = []
-        templates += make_templates(morango.id, 30, 20)
-        templates += make_templates(alface.id, 35, 15)
+    db.add_all(templates)
+    db.commit()
 
-        db.add_all(templates)
-        db.commit()
-
-        return {"message": "seed ok", "created_plants": 2, "created_templates": len(templates)}
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"seed failed: {e}")
+    return SeedResponse(message="seed ok", created_plants=2, created_templates=len(templates))

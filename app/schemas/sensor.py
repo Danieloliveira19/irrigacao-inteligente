@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from typing import Optional
 
 
 class SensorReadingRequest(BaseModel):
-    current_moisture_percent: float = Field(..., ge=0, le=100)
+    current_moisture_percent: float
 
 
 class SensorReadingResponse(BaseModel):
@@ -17,4 +18,4 @@ class SensorReadingResponse(BaseModel):
     duration_minutes: int
 
     rule_source: str
-    note: str
+    note: Optional[str] = None

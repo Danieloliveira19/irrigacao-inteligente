@@ -2,19 +2,17 @@ from pydantic import BaseModel
 from typing import Optional
 
 
-class AddPlantFromCatalog(BaseModel):
+class AddFromCatalogRequest(BaseModel):
     plant_catalog_id: int
 
 
-class AddCustomPlant(BaseModel):
+class AddCustomPlantRequest(BaseModel):
     custom_name: str
-    threshold_percent: float
-    duration_minutes: int
-    min_interval_minutes: int = 60
+    stage: str = "DEVELOPMENT"
 
 
-class UpdatePlantStage(BaseModel):
-    stage: str  # INITIAL | DEVELOPMENT | MID | LATE
+class UpdateStageRequest(BaseModel):
+    stage: str
 
 
 class UserPlantResponse(BaseModel):

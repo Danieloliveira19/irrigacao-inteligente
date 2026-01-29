@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 
 class IrrigationEventResponse(BaseModel):
@@ -11,6 +12,8 @@ class IrrigationEventResponse(BaseModel):
     threshold_percent: float
     should_irrigate: bool
     duration_minutes: int
+    rule_source: str
+    note: Optional[str] = None
     created_at: datetime
 
     class Config:
