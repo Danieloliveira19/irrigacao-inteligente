@@ -1,6 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.sql import func
-
+from sqlalchemy import Column, Integer, String, Float
 from app.database.base import Base
 
 
@@ -8,10 +6,6 @@ class Plant(Base):
     __tablename__ = "plants"
 
     id = Column(Integer, primary_key=True, index=True)
-
-    # planta do catálogo ou personalizada
     name = Column(String, nullable=False)
-    is_catalog = Column(Boolean, default=True)
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
+    default_threshold_percent = Column(Float, nullable=False, default=30.0)
+    default_duration_minutes = Column(Integer, nullable=False, default=20)

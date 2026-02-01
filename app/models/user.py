@@ -1,6 +1,4 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship
-
 from app.database.base import Base
 
 
@@ -9,10 +7,4 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    email = Column(String, nullable=False, unique=True, index=True)
-
-    plants = relationship(
-        "UserPlant",
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
+    email = Column(String, nullable=True, index=True)

@@ -2,77 +2,85 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.deps import get_db
-from app.models.user import User
 from app.models.user_plant import UserPlant
 from app.models.plant_catalog import PlantCatalog
+from app.models.plant import Plant
+from app.models.irrigation_rule import IrrigationRule
 from app.schemas.user_plant import (
-    AddFromCatalogRequest,
-    AddCustomPlantRequest,
-    UpdateStageRequest,
-    UserPlantResponse,
+    UserPlantOut, AddFromCatalogIn, AddCustomPlantIn, UpdateStageIn
 )
 
 router = APIRouter(prefix="/users/{user_id}/plants", tags=["User Plants"])
 
 
-def _get_user(db: Session, user_id: int) -> User:
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    return user
-
-
-@router.get("/", response_model=list[UserPlantResponse])
+@router.get("/", response_model=list[UserPlantOut])
 def list_user_plants(user_id: int, db: Session = Depends(get_db)):
-    _get_user(db, user_id)
-    return db.query(UserPlant).filter(UserPlant.user_id == user_id).order_by(UserPlant.id.asc()).all()
+    return db.query(UserPlant).filter(UserPlant.user_id == user_id).all()
 
 
-@router.post("/from-catalog", response_model=UserPlantResponse)
-def add_from_catalog(user_id: int, payload: AddFromCatalogRequest, db: Session = Depends(get_db)):
-    _get_user(db, user_id)
+@router.post("/from-catalog", response_model=UserPlantOut)
+def add_from_catalog(user_id: int, payload: AddFromCatalogIn, db: Session = Depends(get_db)):
+    cat = db.query(PlantCatalog).filter(PlantCatalog.id == payload.catalog_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Catalog plant not found")
 
-    catalog = db.query(PlantCatalog).filter(PlantCatalog.id == payload.plant_catalog_id).first()
-    if not catalog:
-        raise HTTPException(status_code=404, detail="PlantCatalog não encontrado")
+    up = UserPlant(user_id=user_id, catalog_id=cat.id, stage="DEVELOPMENT")
+    db.add(up)
+    db.commit()
+    db.refresh(up)
 
-    plant = UserPlant(
-        user_id=user_id,
-        plant_catalog_id=catalog.id,
-        custom_name=None,
+    # cria regra default para essa planta
+    rule = IrrigationRule(
+        user_plant_id=up.id,
         stage="DEVELOPMENT",
+        threshold_percent=cat.default_threshold_percent,
+        duration_minutes=cat.default_duration_minutes,
+        min_interval_minutes=60,
+        enabled=True,
+    )
+    db.add(rule)
+    db.commit()
+
+    return up
+
+
+@router.post("/custom", response_model=UserPlantOut)
+def add_custom(user_id: int, payload: AddCustomPlantIn, db: Session = Depends(get_db)):
+    plant = Plant(
+        name=payload.name,
+        default_threshold_percent=payload.default_threshold_percent,
+        default_duration_minutes=payload.default_duration_minutes,
     )
     db.add(plant)
     db.commit()
     db.refresh(plant)
-    return plant
 
+    up = UserPlant(user_id=user_id, plant_id=plant.id, stage="DEVELOPMENT")
+    db.add(up)
+    db.commit()
+    db.refresh(up)
 
-@router.post("/custom", response_model=UserPlantResponse)
-def add_custom(user_id: int, payload: AddCustomPlantRequest, db: Session = Depends(get_db)):
-    _get_user(db, user_id)
-
-    plant = UserPlant(
-        user_id=user_id,
-        plant_catalog_id=None,
-        custom_name=payload.custom_name,
-        stage=payload.stage,
+    rule = IrrigationRule(
+        user_plant_id=up.id,
+        stage="DEVELOPMENT",
+        threshold_percent=plant.default_threshold_percent,
+        duration_minutes=plant.default_duration_minutes,
+        min_interval_minutes=60,
+        enabled=True,
     )
-    db.add(plant)
+    db.add(rule)
     db.commit()
-    db.refresh(plant)
-    return plant
+
+    return up
 
 
-@router.put("/{user_plant_id}/stage", response_model=UserPlantResponse)
-def update_stage(user_id: int, user_plant_id: int, payload: UpdateStageRequest, db: Session = Depends(get_db)):
-    _get_user(db, user_id)
+@router.put("/{user_plant_id}/stage", response_model=UserPlantOut)
+def update_stage(user_id: int, user_plant_id: int, payload: UpdateStageIn, db: Session = Depends(get_db)):
+    up = db.query(UserPlant).filter(UserPlant.id == user_plant_id, UserPlant.user_id == user_id).first()
+    if not up:
+        raise HTTPException(status_code=404, detail="User plant not found")
 
-    plant = db.query(UserPlant).filter(UserPlant.id == user_plant_id, UserPlant.user_id == user_id).first()
-    if not plant:
-        raise HTTPException(status_code=404, detail="Planta do usuário não encontrada")
-
-    plant.stage = payload.stage
+    up.stage = payload.stage
     db.commit()
-    db.refresh(plant)
-    return plant
+    db.refresh(up)
+    return up

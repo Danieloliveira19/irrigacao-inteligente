@@ -1,26 +1,26 @@
 from pydantic import BaseModel
-from typing import Optional
 
 
-class AddFromCatalogRequest(BaseModel):
-    plant_catalog_id: int
-
-
-class AddCustomPlantRequest(BaseModel):
-    custom_name: str
-    stage: str = "DEVELOPMENT"
-
-
-class UpdateStageRequest(BaseModel):
-    stage: str
-
-
-class UserPlantResponse(BaseModel):
+class UserPlantOut(BaseModel):
     id: int
     user_id: int
-    plant_catalog_id: Optional[int] = None
-    custom_name: Optional[str] = None
     stage: str
+    plant_id: int | None = None
+    catalog_id: int | None = None
 
     class Config:
         from_attributes = True
+
+
+class AddFromCatalogIn(BaseModel):
+    catalog_id: int
+
+
+class AddCustomPlantIn(BaseModel):
+    name: str
+    default_threshold_percent: float = 30.0
+    default_duration_minutes: int = 20
+
+
+class UpdateStageIn(BaseModel):
+    stage: str

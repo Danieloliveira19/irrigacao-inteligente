@@ -2,38 +2,27 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.deps import get_db
-from app.models.user_plant import UserPlant
 from app.models.irrigation_rule import IrrigationRule
-from app.schemas.irrigation_rule import IrrigationRuleCreate, IrrigationRuleResponse
+from app.schemas.irrigation_rule import IrrigationRuleOut, IrrigationRulePatchIn
 
 router = APIRouter(prefix="/rules", tags=["Irrigation Rules"])
 
 
-@router.get("/user-plant/{user_plant_id}", response_model=list[IrrigationRuleResponse])
+@router.get("/user-plant/{user_plant_id}", response_model=list[IrrigationRuleOut])
 def list_rules(user_plant_id: int, db: Session = Depends(get_db)):
-    return (
-        db.query(IrrigationRule)
-        .filter(IrrigationRule.user_plant_id == user_plant_id)
-        .order_by(IrrigationRule.created_at.desc())
-        .all()
-    )
+    return db.query(IrrigationRule).filter(IrrigationRule.user_plant_id == user_plant_id).all()
 
 
-@router.post("/user-plant/{user_plant_id}", response_model=IrrigationRuleResponse)
-def create_rule(user_plant_id: int, payload: IrrigationRuleCreate, db: Session = Depends(get_db)):
-    plant = db.query(UserPlant).filter(UserPlant.id == user_plant_id).first()
-    if not plant:
-        raise HTTPException(status_code=404, detail="UserPlant não encontrado")
+@router.patch("/{rule_id}", response_model=IrrigationRuleOut)
+def patch_rule(rule_id: int, payload: IrrigationRulePatchIn, db: Session = Depends(get_db)):
+    rule = db.query(IrrigationRule).filter(IrrigationRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
 
-    rule = IrrigationRule(
-        user_plant_id=user_plant_id,
-        stage=payload.stage,
-        threshold_percent=payload.threshold_percent,
-        duration_minutes=payload.duration_minutes,
-        min_interval_minutes=payload.min_interval_minutes,
-        enabled=payload.enabled,
-    )
-    db.add(rule)
+    data = payload.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(rule, k, v)
+
     db.commit()
     db.refresh(rule)
     return rule

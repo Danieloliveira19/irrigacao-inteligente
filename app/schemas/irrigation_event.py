@@ -1,19 +1,23 @@
-from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from pydantic import BaseModel
 
 
-class IrrigationEventResponse(BaseModel):
+class IrrigationEventOut(BaseModel):
     id: int
     user_id: int
     user_plant_id: int
-    stage: str
-    moisture_percent: float
-    threshold_percent: float
-    should_irrigate: bool
-    duration_minutes: int
-    rule_source: str
-    note: Optional[str] = None
+
+    stage: str | None = None
+    moisture_percent: float | None = None
+    threshold_percent: float | None = None
+
+    should_irrigate: int
+    duration_minutes: int | None = None
+
+    rule_source: str | None = None
+    note: str | None = None
+
+    # ✅ agora é datetime (não string)
     created_at: datetime
 
     class Config:

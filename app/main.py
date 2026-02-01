@@ -1,50 +1,55 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database.database import engine
 from app.database.base import Base
+from app.database.database import engine
 
-# IMPORTA MODELS para registrar no metadata
-from app.models.user import User  # noqa
-from app.models.plant_catalog import PlantCatalog  # noqa
-from app.models.plant_stage_template import PlantStageTemplate  # noqa
-from app.models.user_plant import UserPlant  # noqa
-from app.models.irrigation_rule import IrrigationRule  # noqa
-from app.models.irrigation_event import IrrigationEvent  # noqa
+# IMPORTA MODELS para garantir que o SQLAlchemy "enxerga" tudo antes do create_all
+from app.models.user import User  # noqa: F401
+from app.models.plant_catalog import PlantCatalog  # noqa: F401
+from app.models.plant import Plant  # noqa: F401
+from app.models.user_plant import UserPlant  # noqa: F401
+from app.models.irrigation_rule import IrrigationRule  # noqa: F401
+from app.models.sensor import SensorReading  # noqa: F401
+from app.models.irrigation_event import IrrigationEvent  # noqa: F401
 
+# Routers (NOMES CERTOS)
 from app.routes.users import router as users_router
-from app.routes.plant_catalog import router as catalog_router
+from app.routes.plant_catalog import router as plant_catalog_router
 from app.routes.user_plants import router as user_plants_router
-from app.routes.irrigation_rules import router as rules_router
+from app.routes.irrigation_rules import router as irrigation_rules_router
 from app.routes.sensor import router as sensor_router
-from app.routes.irrigation_events import router as events_router
+from app.routes.irrigation_engine import router as irrigation_engine_router
+from app.routes.irrigation_events import router as irrigation_events_router
 from app.routes.dashboard import router as dashboard_router
 
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="Sistema de Irrigação Inteligente",
-    version="1.0.0",
-)
+app = FastAPI(title="Sistema de Irrigação Inteligente", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # em produção, restringir
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Rotas (sem duplicar prefix!)
-app.include_router(users_router)
-app.include_router(catalog_router)
-app.include_router(user_plants_router)
-app.include_router(rules_router)
-app.include_router(sensor_router)
-app.include_router(events_router)
-app.include_router(dashboard_router)
+
+@app.on_event("startup")
+def startup():
+    # cria todas as tabelas no irrigacao.db
+    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")
-def root():
+def health():
     return {"status": "ok"}
+
+
+app.include_router(users_router)
+app.include_router(plant_catalog_router)
+app.include_router(user_plants_router)
+app.include_router(irrigation_rules_router)
+app.include_router(sensor_router)
+app.include_router(irrigation_engine_router)
+app.include_router(irrigation_events_router)
+app.include_router(dashboard_router)
