@@ -1,12 +1,51 @@
-# Python
+# =========================
+# Python / FastAPI
+# =========================
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.db
 
 # Ambiente virtual
 venv/
+.env
+.env.*
 
-# Banco local
-*.db
+# =========================
+# Node / Next.js (Frontend)
+# =========================
+node_modules/
+.next/
+out/
+dist/
 
-# VS Code
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Build / Cache
+# =========================
+.cache/
+.turbo/
+coverage/
+
+# =========================
+# VS Code / IDEs
+# =========================
 .vscode/
+.idea/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Outros
+# =========================
+*.log
