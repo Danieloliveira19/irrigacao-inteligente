@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, String
 from sqlalchemy.sql import func
+
 from app.database.base import Base
 
 
@@ -22,5 +23,12 @@ class IrrigationEvent(Base):
 
     rule_source = Column(String, nullable=True)  # "rule" | "template" | "sensor" etc.
     note = Column(String, nullable=True)
+
+    # ===== NOVOS CAMPOS (para o front e para o resumo do engine) =====
+    # IRRIGATED | SKIPPED
+    status = Column(String, nullable=False, default="IRRIGATED")
+
+    # RAIN | MOISTURE_HIGH | COOLDOWN | NO_SENSOR | ...
+    reason = Column(String, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

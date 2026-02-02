@@ -17,7 +17,14 @@ class IrrigationEventOut(BaseModel):
     rule_source: str | None = None
     note: str | None = None
 
-    # ✅ agora é datetime (não string)
+    # ===== NOVOS CAMPOS =====
+    # IRRIGATED | SKIPPED
+    status: str
+
+    # RAIN | MOISTURE_HIGH | COOLDOWN | NO_SENSOR | ...
+    reason: str | None = None
+
+    # agora é datetime (não string)
     created_at: datetime
 
     class Config:
