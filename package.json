@@ -1,0 +1,17 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+
+  "scripts": {
+    "dev": "next dev --no-turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.20",
+    "axios": "^1.13.4"
+  }
+}
