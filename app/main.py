@@ -13,7 +13,7 @@ from app.models.irrigation_rule import IrrigationRule  # noqa: F401
 from app.models.sensor import SensorReading  # noqa: F401
 from app.models.irrigation_event import IrrigationEvent  # noqa: F401
 
-# Routers (NOMES CERTOS)
+# Routers
 from app.routes.users import router as users_router
 from app.routes.plant_catalog import router as plant_catalog_router
 from app.routes.user_plants import router as user_plants_router
@@ -25,25 +25,29 @@ from app.routes.dashboard import router as dashboard_router
 
 app = FastAPI(title="Sistema de Irrigação Inteligente", version="1.0.0")
 
+# Ajuste: CORS correto (sem "*") para não dar conflito com credentials
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://192.168.0.9:3000",
+    "http://192.168.0.11:3000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
 @app.on_event("startup")
 def startup():
-    # cria todas as tabelas no irrigacao.db
     Base.metadata.create_all(bind=engine)
-
 
 @app.get("/")
 def health():
     return {"status": "ok"}
-
 
 app.include_router(users_router)
 app.include_router(plant_catalog_router)

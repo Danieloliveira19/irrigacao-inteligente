@@ -31,7 +31,7 @@ export function Sidebar() {
       <div className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900/30 p-3">
         <p className="text-xs text-neutral-300">Ambiente</p>
         <p className="mt-1 text-xs text-neutral-400">
-          Backend: <span className="font-mono">127.0.0.1:8000</span>
+          Backend: <span className="font-mono">(via Next /api)</span>
         </p>
       </div>
     </aside>

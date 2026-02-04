@@ -1,17 +1,12 @@
-import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/lib/query/providers";
 
-export const metadata: Metadata = {
-  title: "Irrigação Inteligente",
-  description: "Dashboard e gestão de irrigação inteligente (MVP).",
+export const metadata = {
+  title: "Sistema de Irrigação",
+  description: "MVP — Next.js + FastAPI",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
       <body>

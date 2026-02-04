@@ -1,16 +1,8 @@
-export function PageHeader({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
+export function PageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      {subtitle ? (
-        <p className="mt-1 text-sm text-neutral-400">{subtitle}</p>
-      ) : null}
+      <h1 className="text-3xl font-semibold">{title}</h1>
+      {subtitle && <p className="mt-1 text-sm text-neutral-400">{subtitle}</p>}
     </div>
   );
 }
