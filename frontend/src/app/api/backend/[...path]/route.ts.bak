@@ -1,0 +1,47 @@
+// src/app/api/backend/[...path]/route.ts
+import { NextRequest } from "next/server";
+
+export const runtime = "nodejs"; // evita edge/limitações em alguns casos
+
+const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+
+async function handler(req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) {
+  const { path = [] } = await ctx.params;
+
+  // IMPORTANTE: NÃO prefixar com /backend aqui!
+  const targetPath = path.join("/"); // ex: "users/1/plants"
+  const targetUrl = new URL(`${BACKEND_URL.replace(/\/$/, "")}/${targetPath}`);
+
+  // mantém querystring (ex: ?page=1)
+  req.nextUrl.searchParams.forEach((value, key) => {
+    targetUrl.searchParams.append(key, value);
+  });
+
+  // repassa headers (tirando host)
+  const headers = new Headers(req.headers);
+  headers.delete("host");
+
+  // body só quando fizer sentido
+  const hasBody = !["GET", "HEAD"].includes(req.method);
+  const body = hasBody ? await req.arrayBuffer() : undefined;
+
+  const backendRes = await fetch(targetUrl.toString(), {
+    method: req.method,
+    headers,
+    body,
+    redirect: "manual",
+  });
+
+  // repassa status + headers + body
+  const resHeaders = new Headers(backendRes.headers);
+
+  // (opcional) se você tiver problemas com compressão, pode remover:
+  // resHeaders.delete("content-encoding");
+
+  return new Response(backendRes.body, {
+    status: backendRes.status,
+    headers: resHeaders,
+  });
+}
+
+export { handler as GET, handler as POST, handler as PUT, handler as PATCH, handler as DELETE, handler as OPTIONS };

@@ -2,7 +2,126 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Só um reset simples */
-html, body {
-  height: 100%;
+/* =========================
+   CSS VARIABLES (THEME)
+   ========================= */
+@layer base {
+  :root {
+    /* Base */
+    --background: 140 20% 97%;
+    --foreground: 150 30% 12%;
+
+    /* Cards / surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 12%;
+
+    /* Primary (verde Irriva) */
+    --primary: 152 55% 33%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary (azul claro) */
+    --secondary: 200 60% 94%;
+    --secondary-foreground: 200 60% 25%;
+
+    /* Muted / neutros */
+    --muted: 140 15% 93%;
+    --muted-foreground: 150 10% 45%;
+
+    /* Accent (terroso) */
+    --accent: 35 70% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Estados */
+    --success: 152 60% 40%;
+    --warning: 40 90% 50%;
+    --destructive: 0 72% 51%;
+
+    /* Inputs / borders */
+    --border: 140 15% 88%;
+    --input: 140 15% 88%;
+    --ring: 152 55% 33%;
+
+    /* Radius */
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 150 25% 15%;
+    --sidebar-foreground: 140 15% 90%;
+    --sidebar-primary: 152 55% 45%;
+    --sidebar-accent: 150 20% 22%;
+    --sidebar-border: 150 15% 25%;
+  }
+}
+
+/* =========================
+   BASE STYLES
+   ========================= */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-plus-jakarta), system-ui, sans-serif;
+  }
+}
+
+/* =========================
+   COMPONENT HELPERS
+   ========================= */
+@layer components {
+  /* Status pills */
+  .status-ok {
+    @apply bg-primary/10 text-primary border border-primary/20 rounded-full px-3 py-1 text-xs font-bold;
+  }
+
+  .status-warning {
+    background-color: hsl(var(--warning) / 0.12);
+    color: hsl(40 90% 20%);
+    border: 1px solid hsl(var(--warning) / 0.3);
+    @apply rounded-full px-3 py-1 text-xs font-bold;
+  }
+
+  .status-danger {
+    background-color: hsl(var(--destructive) / 0.12);
+    color: hsl(var(--destructive));
+    border: 1px solid hsl(var(--destructive) / 0.3);
+    @apply rounded-full px-3 py-1 text-xs font-bold;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-card text-card-foreground rounded-xl border border-border;
+  }
+
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-[1px];
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground rounded-xl px-4 py-2 font-bold hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground rounded-xl px-4 py-2 font-bold;
+  }
+}
+
+/* =========================
+   UTILITIES
+   ========================= */
+@layer utilities {
+  .text-muted {
+    color: hsl(var(--muted-foreground));
+  }
 }
