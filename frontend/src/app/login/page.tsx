@@ -1,112 +1,148 @@
 "use client";
 
-import Image from "next/image";
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const canSubmit = useMemo(() => {
+    return email.trim().includes("@") && senha.trim().length >= 3;
+  }, [email, senha]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!canSubmit) {
+      setError("Informe um e-mail válido e uma senha.");
+      return;
+    }
+
     setLoading(true);
-
     try {
-      // Login MVP (sem backend ainda)
-      if (!email.includes("@") || senha.length < 3) {
-        throw new Error("Informe um e-mail válido e uma senha.");
-      }
-
-      // usuário fixo por enquanto
       localStorage.setItem("user_id", "1");
-
-      router.push("/app/dashboard");
-    } catch (err: any) {
-      setError(err?.message ?? "Erro ao entrar");
+      router.push("/dashboard");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={styles.page}>
-      {/* LADO ESQUERDO - IMAGEM */}
-      <section style={styles.left}>
-        <div style={styles.leftOverlay} />
+    <main style={S.page}>
+      {/* LADO ESQUERDO */}
+      <section style={S.left}>
+        <div
+          style={{
+            ...S.leftBg,
+            backgroundImage: "url('/imagemlogin.png')",
+          }}
+        />
+        <div style={S.leftOverlay} />
 
-        <div style={styles.leftContent}>
-          <h1 style={styles.leftTitle}>
-            Irrigação inteligente,
-            <br />
-            simples como deve ser.
+        {/* LOGO BRANCA AJUSTADA */}
+        <div style={S.leftLogo}>
+          <img
+            src="/logobranca.png"
+            alt="Irriva"
+            style={{ width: 62, height: 62 }}
+          />
+        </div>
+
+        <div style={S.leftContent}>
+          <h1 style={S.leftTitle}>
+            Controle inteligente da irrigação, simples como deve ser.
           </h1>
 
-          <p style={styles.leftSubtitle}>
-            Gerencie suas culturas, acompanhe a irrigação e economize água com tecnologia acessível.
+          <p style={S.leftSubtitle}>
+            Gerencie suas culturas, acompanhe a irrigação e economize água com
+            tecnologia acessível.
           </p>
         </div>
       </section>
 
-      {/* LADO DIREITO - LOGIN */}
-      <section style={styles.right}>
-        <div style={styles.card}>
-          <div style={styles.brandRow}>
-            <Image src="/file.svg" alt="Irriva" width={28} height={28} />
-            <span style={styles.brandName}>Irriva</span>
+      {/* LADO DIREITO */}
+      <section style={S.right}>
+        <div style={S.card}>
+          {/* Marca */}
+          <div style={S.brandRow}>
+            <img
+              src="/logoverde.png"
+              alt="Irriva"
+              style={{ width: 48, height: 48 }}
+            />
+            <span style={S.brandName}>Irriva</span>
           </div>
 
-          <h2 style={styles.welcome}>Bem-vindo de volta!</h2>
-          <p style={styles.desc}>Entre para acompanhar suas culturas</p>
+          <h2 style={S.title}>Bem-vindo de volta!</h2>
+          <p style={S.subtitle}>Entre para acompanhar suas culturas</p>
 
-          <form onSubmit={onSubmit} style={styles.form}>
-            <label style={styles.label}>E-mail</label>
+          <form onSubmit={onSubmit} style={S.form}>
+            <label style={S.label}>E-mail</label>
             <input
-              style={styles.input}
+              style={S.input}
               placeholder="seu@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
 
-            <label style={{ ...styles.label, marginTop: 14 }}>Senha</label>
-            <input
-              style={styles.input}
-              type="password"
-              placeholder="••••••••"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-            />
+            <label style={{ ...S.label, marginTop: 16 }}>Senha</label>
+            <div style={S.passWrap}>
+              <input
+                style={S.inputPass}
+                placeholder="••••••••"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                type={showPass ? "text" : "password"}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass((v) => !v)}
+                style={S.eyeBtn}
+              >
+                👁️
+              </button>
+            </div>
 
-            {error && <div style={styles.errorBox}>{error}</div>}
+            {error && <div style={S.errorBox}>{error}</div>}
 
-            <button type="submit" style={styles.primaryBtn} disabled={loading}>
+            <button type="submit" style={S.primaryBtn} disabled={loading}>
               {loading ? "Entrando..." : "Entrar"}
             </button>
 
-            <p style={styles.bottomText}>
-              (MVP) Qualquer e-mail válido entra por enquanto.
+            <p style={S.bottomText}>
+              Não tem uma conta?{" "}
+              <Link href="/register" style={S.bottomLink}>
+                Criar conta
+              </Link>
             </p>
           </form>
         </div>
       </section>
-    </div>
+    </main>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const S: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
     display: "grid",
-    gridTemplateColumns: "1.2fr 1fr",
+    gridTemplateColumns: "1fr 1fr",
   },
 
-  left: {
-    position: "relative",
-    backgroundImage: "url('/imagemlogin.png')", // 👈 SUA IMAGEM
+  // LEFT
+  left: { position: "relative", overflow: "hidden" },
+
+  leftBg: {
+    position: "absolute",
+    inset: 0,
     backgroundSize: "cover",
     backgroundPosition: "center",
   },
@@ -114,121 +150,166 @@ const styles: Record<string, React.CSSProperties> = {
   leftOverlay: {
     position: "absolute",
     inset: 0,
-    background: "linear-gradient(135deg, rgba(20, 90, 60, 0.8), rgba(20, 90, 60, 0.5))",
+    background:
+      "linear-gradient(135deg, rgba(9,58,36,0.78), rgba(9,58,36,0.45))",
+  },
+
+  // 🔥 AJUSTE AQUI SE QUISER MAIS FINO
+  leftLogo: {
+    position: "absolute",
+    left: 44,
+    bottom: 215, // ajustado para ficar onde você marcou
+    width: 74,
+    height: 74,
+    display: "grid",
+    placeItems: "center",
+    background: "transparent",
   },
 
   leftContent: {
-    position: "relative",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "flex-end",
-    padding: 48,
-    color: "white",
+    position: "absolute",
+    left: 44,
+    bottom: 64,
+    right: 44,
+    color: "#fff",
+    maxWidth: 760,
   },
 
   leftTitle: {
-    fontSize: 42,
-    fontWeight: 900,
-    lineHeight: 1.1,
     margin: 0,
+    fontSize: 36,
+    lineHeight: 1.08,
+    fontWeight: 800,
+    letterSpacing: -0.3,
+    maxWidth: 700,
   },
 
   leftSubtitle: {
     marginTop: 14,
-    fontSize: 16,
+    fontSize: 15,
+    lineHeight: 1.6,
     opacity: 0.9,
     maxWidth: 520,
   },
 
+  // RIGHT
   right: {
+    background: "#f7f7f6",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#f7f8f7",
-    padding: 24,
+    padding: 56,
   },
 
-  card: {
-    width: "100%",
-    maxWidth: 480,
-    background: "white",
-    borderRadius: 18,
-    padding: 32,
-    border: "1px solid #e5e5e5",
-  },
+  card: { width: "min(640px, 100%)" },
 
   brandRow: {
     display: "flex",
     alignItems: "center",
-    gap: 10,
+    gap: 14,
+    marginBottom: 20,
   },
 
   brandName: {
-    fontSize: 18,
     fontWeight: 900,
-    color: "#145a3c",
+    fontSize: 30,
+    color: "#0c3d25",
   },
 
-  welcome: {
-    marginTop: 18,
-    marginBottom: 6,
-    fontSize: 34,
-    fontWeight: 900,
-    color: "#145a3c",
+  title: {
+    margin: 0,
+    fontSize: 38,
+    lineHeight: 1.1,
+    fontWeight: 800,
+    color: "#0c3d25",
   },
 
-  desc: {
-    marginTop: 0,
-    marginBottom: 20,
-    opacity: 0.75,
+  subtitle: {
+    marginTop: 10,
+    marginBottom: 24,
+    fontSize: 15,
+    color: "rgba(0,0,0,0.65)",
   },
 
   form: {
-    display: "flex",
-    flexDirection: "column",
+    background: "#fff",
+    borderRadius: 18,
+    padding: 28,
+    border: "1px solid rgba(0,0,0,0.08)",
+    boxShadow: "0 18px 50px rgba(0,0,0,0.06)",
   },
 
   label: {
+    display: "block",
     fontSize: 13,
     fontWeight: 700,
-    marginBottom: 6,
+    marginBottom: 8,
   },
 
   input: {
-    height: 44,
-    borderRadius: 12,
-    border: "1px solid #ddd",
+    width: "100%",
+    height: 48,
+    borderRadius: 14,
+    border: "1px solid rgba(0,0,0,0.14)",
     padding: "0 14px",
     fontSize: 14,
-    marginBottom: 10,
   },
 
-  primaryBtn: {
-    height: 46,
-    borderRadius: 12,
-    border: "none",
-    background: "#1f7a4a",
-    color: "white",
-    fontWeight: 900,
-    marginTop: 8,
+  passWrap: { position: "relative" },
+
+  inputPass: {
+    width: "100%",
+    height: 48,
+    borderRadius: 14,
+    border: "1px solid rgba(0,0,0,0.14)",
+    padding: "0 54px 0 14px",
+    fontSize: 14,
+  },
+
+  eyeBtn: {
+    position: "absolute",
+    right: 10,
+    top: 9,
+    height: 30,
+    width: 40,
+    borderRadius: 10,
+    border: "1px solid rgba(0,0,0,0.12)",
+    background: "#fff",
     cursor: "pointer",
   },
 
   errorBox: {
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 10,
-    background: "#ffecec",
+    marginTop: 12,
+    padding: "10px 14px",
+    borderRadius: 12,
+    background: "rgba(255, 0, 0, 0.1)",
     color: "#8b0000",
+    fontWeight: 600,
     fontSize: 13,
-    fontWeight: 700,
+  },
+
+  primaryBtn: {
+    marginTop: 18,
+    width: "100%",
+    height: 54,
+    borderRadius: 14,
+    border: "2px solid rgba(0,0,0,0.18)",
+    background: "#1f7a4d",
+    color: "#fff",
+    fontWeight: 800,
+    fontSize: 16,
+    cursor: "pointer",
   },
 
   bottomText: {
-    marginTop: 14,
-    fontSize: 12,
-    opacity: 0.7,
+    marginTop: 16,
+    fontSize: 13,
     textAlign: "center",
+  },
+
+  bottomLink: {
+    color: "#1f7a4d",
+    fontWeight: 800,
+    textDecoration: "none",
   },
 };
