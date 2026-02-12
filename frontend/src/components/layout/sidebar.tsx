@@ -1,38 +1,86 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  LayoutDashboard,
+  Leaf,
+  BookOpen,
+  Droplets,
+  History,
+  Radio,
+  Settings,
+  LogOut,
+} from "lucide-react";
 
 const nav = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/plants", label: "Minhas Plantas" },
-  { href: "/catalog", label: "Catálogo" },
-  { href: "/rules", label: "Regras" },
-  { href: "/events", label: "Eventos" },
+  { href: "/dashboard", label: "Painel", icon: LayoutDashboard },
+  { href: "/plants", label: "Minhas Plantas", icon: Leaf },
+  { href: "/catalog", label: "Catálogo", icon: BookOpen },
+  { href: "/rules", label: "Regras de Irrigação", icon: Droplets },
+  { href: "/events", label: "Histórico", icon: History },
+  { href: "/sensors", label: "Sensores", icon: Radio },
+  { href: "/settings", label: "Configurações", icon: Settings },
 ];
 
 export function Sidebar() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const isActive = (href: string) => pathname === href;
+
+  function handleLogout() {
+    // Amanhã: limpar cookie/token aqui
+    router.push("/login");
+  }
+
   return (
-    <aside className="hidden w-64 border-r border-neutral-800 bg-neutral-950/60 px-4 py-6 md:block">
-      <div className="mb-6">
-        <p className="text-sm font-semibold tracking-tight">Irrigação</p>
-        <p className="text-xs text-neutral-400">Painel do usuário</p>
+    <aside className="w-64 h-screen sticky top-0 bg-gradient-to-b from-[#163c2b] to-[#0f2e21] text-white flex flex-col">
+      {/* Logo / Marca */}
+      <div className="h-20 flex items-center px-6 gap-3">
+        <img
+          src="/logoverde.png"
+          alt="Irriva"
+          className="h-11 w-11"
+        />
+        <div className="leading-tight">
+          <p className="text-2xl font-semibold tracking-tight">Irriva</p>
+        </div>
       </div>
 
-      <nav className="space-y-1">
-        {nav.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="block rounded-lg px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-900 hover:text-white"
-          >
-            {item.label}
-          </Link>
-        ))}
+      {/* Navegação */}
+      <nav className="flex-1 px-3 py-2 space-y-2">
+        {nav.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.href);
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={[
+                "flex items-center gap-3 px-4 py-2.5 rounded-lg transition",
+                active
+                  ? "bg-[#1f7a4a] text-white"
+                  : "text-white/80 hover:bg-white/10 hover:text-white",
+              ].join(" ")}
+            >
+              <Icon size={18} />
+              <span className="text-sm font-medium">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="mt-8 rounded-xl border border-neutral-800 bg-neutral-900/30 p-3">
-        <p className="text-xs text-neutral-300">Ambiente</p>
-        <p className="mt-1 text-xs text-neutral-400">
-          Backend: <span className="font-mono">(via Next /api)</span>
-        </p>
+      {/* Sair no rodapé */}
+      <div className="p-4 border-t border-white/10 mt-auto">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 text-white/80 hover:text-white transition"
+        >
+          <LogOut size={18} />
+          <span className="text-sm font-medium">Sair</span>
+        </button>
       </div>
     </aside>
   );
