@@ -1,131 +1,123 @@
-// frontend/src/app/catalog/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { APP_CONFIG } from "@/lib/config";
-import { getMockCatalog, type CatalogPlantDTO } from "@/lib/mock/catalog";
-import { OfflineBanner } from "@/components/common/offline-banner";
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/toast";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, Plus, Droplets, Sun, Clock } from "lucide-react";
 
-function difficultyBadge(d: CatalogPlantDTO["difficulty"]) {
-  if (d === "Fácil") return <Badge variant="green">Fácil</Badge>;
-  if (d === "Média") return <Badge variant="amber">Média</Badge>;
-  return <Badge variant="rose">Difícil</Badge>;
-}
+type CatalogPlant = {
+  id: number;
+  name: string;
+  water: string;
+  sun: string;
+  cycle: string;
+  stages: string[];
+  emoji: string;
+};
 
-function categoryBadge(c: CatalogPlantDTO["category"]) {
-  if (c === "Hortaliça") return <Badge variant="blue">Hortaliça</Badge>;
-  if (c === "Erva") return <Badge variant="default">Erva</Badge>;
-  return <Badge variant="amber">Fruta</Badge>;
-}
+const catalog: CatalogPlant[] = [
+  { id: 1, name: "Alface", water: "Média", sun: "Parcial", cycle: "30-45 dias", stages: ["Germinação", "Crescimento", "Colheita"], emoji: "🥬" },
+  { id: 2, name: "Tomate", water: "Alta", sun: "Pleno sol", cycle: "90-120 dias", stages: ["Germinação", "Crescimento", "Floração", "Frutificação", "Colheita"], emoji: "🍅" },
+  { id: 3, name: "Cenoura", water: "Baixa", sun: "Pleno sol", cycle: "70-90 dias", stages: ["Germinação", "Crescimento", "Engrossamento", "Colheita"], emoji: "🥕" },
+  { id: 4, name: "Pimentão", water: "Média", sun: "Pleno sol", cycle: "90-120 dias", stages: ["Germinação", "Crescimento", "Floração", "Frutificação", "Colheita"], emoji: "🫑" },
+  { id: 5, name: "Rúcula", water: "Média", sun: "Parcial", cycle: "25-35 dias", stages: ["Germinação", "Crescimento", "Colheita"], emoji: "🥗" },
+  { id: 6, name: "Couve", water: "Média", sun: "Parcial", cycle: "60-80 dias", stages: ["Germinação", "Crescimento", "Colheita"], emoji: "🥬" },
+  { id: 7, name: "Morango", water: "Alta", sun: "Pleno sol", cycle: "60-90 dias", stages: ["Mudas", "Crescimento", "Floração", "Frutificação", "Colheita"], emoji: "🍓" },
+  { id: 8, name: "Pepino", water: "Alta", sun: "Pleno sol", cycle: "50-70 dias", stages: ["Germinação", "Crescimento", "Floração", "Colheita"], emoji: "🥒" },
+];
 
 export default function CatalogPage() {
-  const userId = APP_CONFIG.userIdDefault;
-  const router = useRouter();
-  const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [added, setAdded] = useState<number[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [all, setAll] = useState<CatalogPlantDTO[]>([]);
-  const [query, setQuery] = useState("");
-  const [category, setCategory] =
-    useState<"Todas" | CatalogPlantDTO["category"]>("Todas");
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      const data = await getMockCatalog();
-      if (!mounted) return;
-      setAll(data);
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return all.filter((p) => {
-      const byCategory = category === "Todas" ? true : p.category === category;
-      const byQuery = q === "" ? true : p.name.toLowerCase().includes(q);
-      return byCategory && byQuery;
-    });
-  }, [all, query, category]);
-
-  function onAdd(plant: CatalogPlantDTO) {
-    toast(`"${plant.name}" adicionada ao sistema`, "success", {
-      label: "Ver plantas",
-      onClick: () => router.push("/plants"),
-    });
-  }
+  const filtered = catalog.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="space-y-4 text-zinc-900">
-      {APP_CONFIG.offlineMock ? <OfflineBanner /> : null}
-
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Catálogo</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Escolha uma planta para adicionar ao sistema.
-          </p>
-        </div>
-        <div className="text-sm text-zinc-500">
-          Usuário: <span className="font-medium">#{userId}</span>
-        </div>
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">
+          Catálogo de Plantas 📚
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Escolha as culturas que deseja adicionar ao seu cultivo
+        </p>
       </div>
 
-      {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-zinc-200 bg-white p-4"
-            >
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="mt-3 h-3 w-1/3" />
-              <Skeleton className="mt-4 h-3 w-full" />
-              <Skeleton className="mt-2 h-3 w-5/6" />
-              <Skeleton className="mt-6 h-8 w-24" />
-            </div>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center">
-          <h4 className="text-base font-semibold">Nada por aqui ainda 🌱</h4>
-          <p className="mt-2 text-sm text-zinc-500">
-            Tente outro nome ou ajuste os filtros.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((p) => (
-            <div
-              key={p.catalog_id}
-              className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
-            >
-              <h3 className="text-base font-semibold">{p.name}</h3>
-              <div className="mt-2 flex gap-2">
-                {categoryBadge(p.category)}
-                {difficultyBadge(p.difficulty)}
-              </div>
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar no catálogo..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
 
-              <p className="mt-3 text-sm text-zinc-600">
-                {p.irrigation_hint}
-              </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {filtered.map((plant) => {
+          const isAdded = added.includes(plant.id);
 
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => onAdd(p)}>Adicionar</Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+          return (
+            <Card key={plant.id} className="card-interactive">
+              <CardContent className="p-5">
+                <div className="text-center mb-4">
+                  <span className="text-4xl">{plant.emoji}</span>
+                  <h3 className="font-display font-semibold text-foreground mt-2">
+                    {plant.name}
+                  </h3>
+                </div>
+
+                <div className="space-y-2 text-sm mb-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Droplets className="h-4 w-4 text-info" />
+                    <span>Água: {plant.water}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Sun className="h-4 w-4 text-warning" />
+                    <span>{plant.sun}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span>Ciclo: {plant.cycle}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {plant.stages.map((s) => (
+                    <Badge key={s} variant="blue" className="text-[10px]">
+                      {s}
+                    </Badge>
+                  ))}
+                </div>
+
+                <Button
+                  className="w-full gap-2"
+                  variant={isAdded ? "secondary" : "default"}
+                  size="sm"
+                  onClick={() =>
+                    setAdded((prev) =>
+                      prev.includes(plant.id) ? prev : [...prev, plant.id]
+                    )
+                  }
+                >
+                  {isAdded ? (
+                    "✓ Adicionado"
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      Adicionar ao meu cultivo
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
