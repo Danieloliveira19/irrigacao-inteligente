@@ -1,169 +1,219 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Search, Plus, Sprout, Trash2, CheckCircle2 } from "lucide-react";
 
-type UserPlantListItem = {
-  user_plant_id: number;
-  user_id: number;
-  plant_name: string;
-  stage: string;
-  status: string;
-  last_irrigation_at: string | null;
+type PlantStatus = "OK" | "ALERT" | "NEEDS_WATER";
+
+type UserPlant = {
+  id: number;
+  name: string;
+  stage: string; // Germinação/Crescimento...
+  waterNeed: string; // Baixa/Média/Alta
+  status: PlantStatus;
+  plantedDays: number;
 };
 
-function formatDateTimeBR(iso: string | null) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("pt-BR");
-}
+const MOCK_PLANTS: UserPlant[] = [
+  {
+    id: 1,
+    name: "Alface",
+    stage: "Germinação",
+    waterNeed: "Média",
+    status: "OK",
+    plantedDays: 0,
+  },
+  // Se quiser simular mais, descomente:
+  // { id: 2, name: "Tomate", stage: "Crescimento", waterNeed: "Alta", status: "NEEDS_WATER", plantedDays: 12 },
+  // { id: 3, name: "Manjericão", stage: "Vegetativo", waterNeed: "Média", status: "ALERT", plantedDays: 5 },
+];
 
-function statusPill(status: string) {
-  const base: React.CSSProperties = {
-    display: "inline-block",
-    padding: "4px 10px",
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 700,
-    border: "1px solid #ddd",
+function statusPill(status: PlantStatus) {
+  if (status === "OK") {
+    return {
+      label: "OK",
+      className:
+        "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200",
+    };
+  }
+  if (status === "NEEDS_WATER") {
+    return {
+      label: "Precisa de água",
+      className:
+        "bg-amber-50 text-amber-800 ring-1 ring-amber-200",
+    };
+  }
+  return {
+    label: "Alerta",
+    className: "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
   };
-
-  const s = status?.toUpperCase?.() ?? status;
-
-  if (s === "OK") return <span style={{ ...base, background: "#eaffea" }}>OK</span>;
-  if (s === "ALERT") return <span style={{ ...base, background: "#fff2cc" }}>Alerta</span>;
-  if (s === "CRITICAL") return <span style={{ ...base, background: "#ffe6e6" }}>Crítico</span>;
-  return <span style={base}>{status}</span>;
 }
 
 export default function PlantsPage() {
-  const userId = 1;
+  const [search, setSearch] = useState("");
+  const [plants, setPlants] = useState<UserPlant[]>(MOCK_PLANTS);
 
-  const [plants, setPlants] = useState<UserPlantListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const filtered = useMemo(() => {
+    return plants.filter((p) =>
+      p.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [plants, search]);
 
-  async function loadPlants() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(`/api/backend/users/${userId}/plants/`, {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error("Resposta inesperada (não é array).");
-
-      setPlants(data);
-    } catch (err: any) {
-      setError(err?.message ?? "Erro desconhecido");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadPlants();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const countLabel = `${plants.length} planta${plants.length === 1 ? "" : "s"} cadastrada${plants.length === 1 ? "" : "s"}`;
 
   return (
-    <main style={{ padding: 24 }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <div className="space-y-6 animate-fade-in">
+      {/* Header (igual Lovable) */}
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Minhas Plantas</h1>
-          <p style={{ marginTop: 6, opacity: 0.8 }}>
-            Lista de plantas cadastradas e seu status atual.
-          </p>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Minhas Plantas 🌱
+          </h1>
+          <p className="text-muted-foreground mt-1">{countLabel}</p>
         </div>
 
-        <div style={{ marginLeft: "auto" }}>
-          <button
-            onClick={loadPlants}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 10,
-              border: "1px solid #ccc",
-              cursor: "pointer",
-            }}
-          >
-            Recarregar
-          </button>
-        </div>
-      </header>
+        <Button asChild className="gap-2">
+          <Link href="/catalog">
+            <Plus className="h-4 w-4" />
+            Nova Planta
+          </Link>
+        </Button>
+      </div>
 
-      {loading ? (
-        <p style={{ marginTop: 16 }}>Carregando...</p>
-      ) : error ? (
-        <>
-          <p style={{ marginTop: 16, color: "crimson", fontWeight: 700 }}>Falha ao carregar</p>
-          <pre style={{ background: "#111", color: "#0f0", padding: 12, borderRadius: 10 }}>
-            {error}
-          </pre>
-        </>
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar planta..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {/* Empty / List */}
+      {plants.length === 0 ? (
+        <Card className="card">
+          <CardContent className="p-10">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 ring-1 ring-emerald-100">
+                  <Sprout className="h-5 w-5 text-emerald-700" />
+                </span>
+
+                <div>
+                  <h2 className="font-display text-lg font-semibold">
+                    Nenhuma planta cadastrada
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Adicione plantas pelo catálogo para acompanhar estágio,
+                    necessidades e histórico.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <Button asChild className="gap-2">
+                  <Link href="/catalog">
+                    <Plus className="h-4 w-4" />
+                    Ir para o Catálogo
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
-        <>
-          <div style={{ marginTop: 18, opacity: 0.8 }}>
-            <b>{plants.length}</b> cadastrada(s)
+        <div className="space-y-4">
+          {/* Container estreito alinhado à esquerda (igual ao print do Lovable) */}
+          <div className="max-w-2xl">
+            {filtered.map((p) => {
+              const pill = statusPill(p.status);
+
+              return (
+                <Card key={p.id} className="card mb-4">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col gap-5">
+                      {/* Top row */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 ring-1 ring-emerald-100">
+                            <Sprout className="h-5 w-5 text-emerald-700" />
+                          </span>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-display text-lg font-semibold">
+                                {p.name}
+                              </h3>
+                            </div>
+
+                            <p className="text-sm text-muted-foreground">
+                              {p.plantedDays} dia{p.plantedDays === 1 ? "" : "s"} plantado
+                            </p>
+                          </div>
+                        </div>
+
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium",
+                            pill.className
+                          )}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          {pill.label}
+                        </span>
+                      </div>
+
+                      {/* Details 2 linhas */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Estágio</span>
+                          <Badge variant="blue">{p.stage}</Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">
+                            Necessidade de água
+                          </span>
+                          <span className="font-medium text-foreground">
+                            {p.waterNeed}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="pt-2">
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          onClick={() => setPlants((prev) => prev.filter((x) => x.id !== p.id))}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          <div
-            style={{
-              marginTop: 12,
-              border: "1px solid #e5e5e5",
-              borderRadius: 14,
-              overflow: "hidden",
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#f7f7f7" }}>
-                  <th style={{ textAlign: "left", padding: 12 }}>Planta</th>
-                  <th style={{ textAlign: "left", padding: 12 }}>Estágio</th>
-                  <th style={{ textAlign: "left", padding: 12 }}>Status</th>
-                  <th style={{ textAlign: "left", padding: 12 }}>Última irrigação</th>
-                  <th style={{ textAlign: "right", padding: 12 }}>ID</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {plants.map((p) => (
-                  <tr key={p.user_plant_id} style={{ borderTop: "1px solid #eee" }}>
-                    <td style={{ padding: 12 }}>
-                      <Link
-                        href={`/plants/${p.user_plant_id}`}
-                        style={{ fontWeight: 800, textDecoration: "none" }}
-                      >
-                        {p.plant_name}
-                      </Link>
-                      <div style={{ fontSize: 12, opacity: 0.75 }}>user_id: {p.user_id}</div>
-                    </td>
-
-                    <td style={{ padding: 12 }}>{p.stage}</td>
-                    <td style={{ padding: 12 }}>{statusPill(p.status)}</td>
-                    <td style={{ padding: 12 }}>{formatDateTimeBR(p.last_irrigation_at)}</td>
-                    <td style={{ padding: 12, textAlign: "right", opacity: 0.75 }}>
-                      #{p.user_plant_id}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <p style={{ marginTop: 12, fontSize: 12, opacity: 0.75 }}>
-            Clique no nome da planta para abrir os detalhes.
-          </p>
-        </>
+          {/* Nenhum resultado da busca */}
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma planta encontrada com “{search}”.
+            </p>
+          ) : null}
+        </div>
       )}
-    </main>
+    </div>
   );
 }
